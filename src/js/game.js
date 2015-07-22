@@ -1,12 +1,13 @@
 (function() {
-  'use strict';
+	'use strict';
 
   function Game() {}
 
   Game.prototype = {
     create: function () {
 
-      this.turn = true;
+      this.turnStart = true;
+			this.actorAction = false;
       this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
       this.game.stage.backgroundColor = '#000000';
@@ -26,6 +27,7 @@
 					
           ID : i,
 					SPEED : 500,
+					GRAVITY : 1000,
 					
 					action : false,
           trajectory : this.graphic
@@ -36,10 +38,10 @@
 		
         this.sprite.inputEnabled = true;
 				this.sprite.input.priorityID = 1;
-				//this.sprite.events.onInputDown.add(this.click, this);
+				this.sprite.events.onInputDown.add(this.clickedSprite, this);
 
         this.sprite.body.collideWorldBounds = true;
-        this.sprite.body.gravity.y = 500;
+        this.sprite.body.gravity.y = this.sprite.physicsData.GRAVITY;
         //this.sprite.body.maxVelocity.y = 500;
 		
         this.graphic = this.game.add.graphics(this.sprite.x, this.sprite.y);
@@ -48,7 +50,7 @@
         this.actors.add(this.sprite);
       }
 
-      this.bitmap = this.game.add.bitmapData(this.game.width, this.game.height);
+      this.bitmap = this.game.add.bitmapData(this.game.world.width, this.game.world.height);
       this.bitmap.context.fillStyle = 'rgb(255, 255, 255)';
       this.bitmap.context.strokeStyle = 'rgb(255, 255, 255)';
       this.game.add.image(0, 0, this.bitmap);
@@ -80,7 +82,6 @@
       Each turn player can make new input
       The game uses a physics based game engine
         but it plays like an RPG
-
     TODO: Rewrite + cleanup primary game Loop
           Add more actors and actions (objects in the enviroment and ways the objects interact with other objects)
     */
@@ -88,7 +89,7 @@
 			//update frames collisions
 			this.game.physics.arcade.collide(this.actors, this.actors, this.friendsCollide, null, this);
 			
-			if(this.turn === false){
+			if(this.turnStart === false){
 				//this is for when the game is NOT paused. Maybe add counter attacks... maybe (depending on game pacing + strategy)
 			} else {
 				//check for player input.
@@ -109,6 +110,36 @@
 
       
     },
+		
+		drawTrajectory: function(actor, angle, loop){
+			this.actor = actor;
+			this.theta = angle * (-1);
+			
+			this.calc = {
+				i : this.actor.z,
+				x : 0,
+				y : 0,
+				t : 0,
+				correctionFactor: 0.99
+			};
+			
+			//TODO: clean code here for trajectory
+			this.bitmap.context.clearRect(0,0,this.game.width,this.game.height);
+			this.bitmap.context.fillStyle = 'rgba(255, 255, 255, 0.5)';
+			
+			for(this.calc.t; this.calc.t < 1; this.calc.t += 0.03){
+				this.calc.x = this.actor.physicsData.SPEED * this.calc.t * Math.cos(this.theta) * this.calc.correctionFactor;
+				this.calc.y = this.actor.physicsData.SPEED * this.calc.t * Math.sin(this.theta) * this.calc.correctionFactor - 0.5 * this.actor.physicsData.GRAVITY * this.calc.t * this.calc.t;
+				this.bitmap.context.fillRect(this.calc.x + this.actor.x, this.actor.y - this.calc.y, 3, 3);
+			}
+			if(!loop) {
+				this.actor.physicsData.veloX = Math.cos(this.theta) * this.actor.physicsData.SPEED;
+				this.actor.physicsData.veloY = -Math.sin(this.theta) * this.actor.physicsData.SPEED;
+				this.actor.physicsData.action = false;
+				this.actor.alpha = 1;
+			}
+			this.bitmap.dirty = true;
+		},
     
 		
 		/*
@@ -116,51 +147,24 @@
 		*/
 	
     //input function(s)
-    click: function (sprite, pointer) { 
-			this.sprite = sprite;
+    click: function (cPointer, mouseEvent) { 
+			this.cP = cPointer;
+			this.mE = mouseEvent;
+			if(this.actorAction) {
+				this.actorAction = false;
+			}
+		},
+		clickedSprite: function (sprite, pointer){
+			this.actor = sprite;
 			this.pointer = pointer;
-			console.log(sprite, pointer);
-			if (this.sprite.actor) {
-				//console.log('aloha');
-				//console.log(this.sprite.physicsData);
-				//if (this.sprite.physicsData.action === true) return;
-				this.sprite.alpha = 0.5;
-				this.sprite.physicsData.action = true;
-				this.action(this.sprite);
-			} else if(this.sprite){
-				this.sprite.alpha = 1;
-			} else {}
+			this.actor.alpha = 0.5;
+			this.actor.physicsData.action = true;
+			this.actorAction = true;
 		},
 		action: function(actor) {
 			this.actor = actor;
 			this.actor.rotation = this.game.physics.arcade.angleToPointer(this.actor);
-			this.theta = -this.actor.rotation;
-			
-			//TODO: clean code here for trajectory
-			this.bitmap.context.clearRect(0,0,this.game.width,this.game.height);
-			this.bitmap.context.fillStyle = 'rgba(255, 255, 255, 0.5)';
-			this.calc = {
-				i : this.actor.z,
-				x : 0,
-				y : 0,
-				t : 0,
-				MARCH_SPEED : 40,
-				correctionFactor: 0.99
-			};
-			this.timeOffset = this.timeOffset + 1 || 0;
-			this.timeOffset = this.timeOffset % this.calc.MARCH_SPEED;
-			
-			for(this.calc.t + this.timeOffset/(1000*this.calc.MARCH_SPEED/60); this.calc.t < 1; this.calc.t += 0.03){
-				this.calc.x = this.actor.physicsData.SPEED * this.calc.t * Math.cos(this.theta) * this.calc.correctionFactor;
-				this.calc.y = this.actor.physicsData.SPEED * this.calc.t * Math.sin(this.theta) * this.calc.correctionFactor - 0.5 * 700 * this.calc.t * this.calc.t;
-
-				this.bitmap.context.fillRect(this.calc.x + this.actor.x, this.actor.y - this.calc.y, 3, 3);
-				//for(var t = 0 + this.timeOffset/(1000*MARCH_SPEED/60); t < 3; t += 0.03) {
-				//x = this.BULLET_SPEED * t * Math.cos(theta) * correctionFactor;
-        //y = this.BULLET_SPEED * t * Math.sin(theta) * correctionFactor - 0.5 * this.GRAVITY * t * t;
-        //this.bitmap.context.fillRect(x + this.gun.x, this.gun.y - y, 3, 3);
-			}
-			this.bitmap.dirty = true;
+			this.drawTrajectory(this.actor, this.actor.rotation, this.actorAction);
 		},
 	
     jump: function(inputPoint, actors) {
@@ -170,12 +174,12 @@
         this.actor = item;
         this.v = this.game.physics.arcade.angleToPointer(item);
         this.actor.body.velocity.x = Math.cos(this.v) * this.actor.physicsData.SPEED;
-        this.actor.body.velocity.y = Math.sin(this.v) * this.actor.physicsData.SPEED + (this.actor.z * 100);
+        this.actor.body.velocity.y = Math.sin(this.v) * this.actor.physicsData.SPEED;
       }, this);
     },
 
     play: function() {
-      this.turn = false;
+      this.turnStart = false;
       this.samp2.play();
       this.actors.forEach(function(a){
         this.actor = a;
@@ -184,14 +188,14 @@
         this.actor.body.gravity.y = 1000;
       }, this);
       this.game.time.events.add(500, this.pause, this);
-      this.jump(this.in, this.actors);
     },
 
     pause: function() {
-      if (this.turn === false) {
-        this.turn = true;
+      if (this.turnStart === false) {
+        this.turnStart = true;
         this.actors.forEach(function(a){
-          a.physicsData = {veloX: a.body.velocity.x, veloY: a.body.velocity.y, ID: a.z};
+          a.physicsData.veloX = a.body.velocity.x; 
+					a.physicsData.veloY = a.body.velocity.y;
         }, this);
       } else {
 				this.actors.forEach(function(item){
@@ -209,10 +213,6 @@
       //this.game.debug.pointer(this.game.input.activePointer);
     },
 
-	
-	
-	
-	
     //music function(s)
     start: function() {
       this.samps.shift();
@@ -221,14 +221,10 @@
 
     //collision function(s)
     friendsCollide: function(a, b) {
-      a.body.velocity.x = -1000;
-      b.body.velocity.x = 1000;
-    },
-			
-			
-			
+      a.body.velocity.x = -10;
+      b.body.velocity.x = 10;
+    },	
   };
-
   window['test2'] = window['test2'] || {};
   window['test2'].Game = Game;
 }());

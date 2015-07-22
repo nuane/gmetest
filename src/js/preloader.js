@@ -19,7 +19,8 @@
 
     loadResources: function () {
       this.load.image('ball', 'assets/ball.png');
-      this.load.image('mountains', 'assets/mountains.png');
+			this.load.spritesheet('guy', 'assets/animations1.png', 32, 65, 60);
+      this.load.image('mountains', 'assets/mountainstestA.png');
 
       //load audio
       this.game.load.audio('samp1', 'assets/samp1.mp3');
