@@ -7,6 +7,8 @@
     create: function () {
 
       this.turnStart = true;
+			this.turnNumber = 1;
+			this.turnTime = Phaser.Timer.SECOND * 2;
 			this.actorAction = false;
       this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -26,7 +28,7 @@
           veloY : 0,
 					
           ID : i,
-					SPEED : 500,
+					SPEED : 1000,
 					GRAVITY : 1000,
 					
 					action : false,
@@ -64,8 +66,10 @@
       //looading samples into samps array to use as sound effects
       this.samp1 = this.game.add.audio('samp1');
       this.samp2 = this.game.add.audio('samp2');
-      this.samps = [this.samp1, this.samp2];
-      this.game.sound.setDecodedCallback(this.samps, this.start, this);
+			this.samp3 = this.game.add.audio('gSamp1');
+			this.samp4 = this.game.add.audio('gSamp2');
+      this.samps = [this.samp1, this.samp2, this.samp3, this.samp4];
+      this.game.sound.setDecodedCallback(this.samps, this.startMusic, this);
 
       //input algorithms
       this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -180,14 +184,16 @@
 
     play: function() {
       this.turnStart = false;
-      this.samp2.play();
+			this.turnNumber++;
+			console.log(this.turnNumber);
+			this.music();
       this.actors.forEach(function(a){
         this.actor = a;
         this.actor.body.velocity.x = this.actor.physicsData.veloX;
         this.actor.body.velocity.y = this.actor.physicsData.veloY;
-        this.actor.body.gravity.y = 1000;
+        this.actor.body.gravity.y = this.actor.physicsData.GRAVITY;
       }, this);
-      this.game.time.events.add(500, this.pause, this);
+      this.game.time.events.add(this.turnTime, this.pause, this);
     },
 
     pause: function() {
@@ -214,10 +220,22 @@
     },
 
     //music function(s)
-    start: function() {
+    startMusic: function() {
       this.samps.shift();
       this.samp1.loopFull(1);
     },
+		music: function() {
+			this.samps.shift();
+			if(this.turnNumber === 2){
+				this.samp3.play();
+			} else if (this.turnNumber === 3){
+				this.samp4.play();
+			} else if (this.turnNumber === 4){
+				console.log('hey you');
+			} else {
+				this.samp2.play();
+			}
+		},
 
     //collision function(s)
     friendsCollide: function(a, b) {
