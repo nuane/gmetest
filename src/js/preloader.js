@@ -28,7 +28,9 @@
       this.game.load.audio('samp2', 'assets/samp2.mp3');
 			this.game.load.audio('gSamp1', 'assets/guitar_samp1.mp3');
       this.game.load.audio('gSamp2', 'assets/guitar_samp2.mp3');
-    },
+			this.game.load.audio('gSamp3', 'assets/guitar_samp3.mp3');
+
+		},
 
     create: function () {
 

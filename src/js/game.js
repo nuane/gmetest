@@ -7,8 +7,9 @@
     create: function () {
 
       this.turnStart = true;
-			this.turnNumber = 1;
-			this.turnTime = Phaser.Timer.SECOND * 2;
+			this.turnNumber = 0;
+			this.turnTime = Phaser.Timer.SECOND * 1.5;
+			this.syncPlayWithMusic = false;
 			this.actorAction = false;
       this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -18,8 +19,8 @@
 
       //initialize sprite from preload constructor then assign physics properties
       this.actors = this.game.add.group();
-      for(var i = 1; i < 3; i++) {
-        this.sprite = this.game.add.sprite(200 * i, 300 * i, 'ball');
+      for(var i = 1; i < 5; i++) {
+        this.sprite = this.game.add.sprite(200 * i, 300 * i, 'guy');
 				this.sprite.actor = true;
         this.game.physics.enable(this.sprite, Phaser.Physics.ARCADE);
 				//add physics data object to keep track of actor movement
@@ -29,15 +30,18 @@
 					
           ID : i,
 					SPEED : 1000,
-					GRAVITY : 1000,
+					GRAVITY : 500,
 					
 					action : false,
           trajectory : this.graphic
         };
 		
         this.sprite.anchor.setTo(0.5, 0.5);
-        this.sprite.scale.setTo(0.2);
-		
+        this.sprite.scale.setTo(2.5);
+				
+				this.animation = this.sprite.animations.add('walk');
+				this.animation.play(10, true);
+				
         this.sprite.inputEnabled = true;
 				this.sprite.input.priorityID = 1;
 				this.sprite.events.onInputDown.add(this.clickedSprite, this);
@@ -60,7 +64,7 @@
       //pausing algorithms LABEL MUTHERTRUCKA
       this.pauseLabel = this.game.add.text(this.game.width - 100, 20, 'play', { font: '28px Arial', fill: '#fff' });
       this.pauseLabel.inputEnabled = true;
-      this.pauseLabel.events.onInputDown.add(this.play, this);
+      this.pauseLabel.events.onInputDown.add(this.playInit, this);
 
 
       //looading samples into samps array to use as sound effects
@@ -68,12 +72,17 @@
       this.samp2 = this.game.add.audio('samp2');
 			this.samp3 = this.game.add.audio('gSamp1');
 			this.samp4 = this.game.add.audio('gSamp2');
-      this.samps = [this.samp1, this.samp2, this.samp3, this.samp4];
+      this.samp5 = this.game.add.audio('gSamp3');
+
+			this.samps = [this.samp1, this.samp2, this.samp3, this.samp4, this.samp5];
       this.game.sound.setDecodedCallback(this.samps, this.startMusic, this);
+			this.currentMusicLoop = this.samp5;
+
 
       //input algorithms
       this.cursors = this.game.input.keyboard.createCursorKeys();
       this.input.onDown.add(this.click, this);
+			this.input.onHold.add(this.hold, this);
 
       //initialize the first 'pause'
       this.game.time.events.add(1000, this.pause, this);
@@ -107,10 +116,10 @@
 			}
 
       //camera movement with cursor keys
-      if(this.cursors.up.isDown) this.game.camera.y -= 8;
-      if(this.cursors.down.isDown) this.game.camera.y += 8;
-      if(this.cursors.left.isDown) this.game.camera.x -= 16;
-      if(this.cursors.right.isDown) this.game.camera.x += 16;
+      if(this.cursors.up.isDown) {this.game.camera.y -= 8;}
+      if(this.cursors.down.isDown) {this.game.camera.y += 8;}
+      if(this.cursors.left.isDown) {this.game.camera.x -= 16;}
+      if(this.cursors.right.isDown) {this.game.camera.x += 16;}
 
       
     },
@@ -128,7 +137,7 @@
 			};
 			
 			//TODO: clean code here for trajectory
-			this.bitmap.context.clearRect(0,0,this.game.width,this.game.height);
+			this.bitmap.context.clearRect(0,0,this.game.world.width,this.game.world.height);
 			this.bitmap.context.fillStyle = 'rgba(255, 255, 255, 0.5)';
 			
 			for(this.calc.t; this.calc.t < 1; this.calc.t += 0.03){
@@ -137,10 +146,7 @@
 				this.bitmap.context.fillRect(this.calc.x + this.actor.x, this.actor.y - this.calc.y, 3, 3);
 			}
 			if(!loop) {
-				this.actor.physicsData.veloX = Math.cos(this.theta) * this.actor.physicsData.SPEED;
-				this.actor.physicsData.veloY = -Math.sin(this.theta) * this.actor.physicsData.SPEED;
-				this.actor.physicsData.action = false;
-				this.actor.alpha = 1;
+				this.jump(this.actor, this.theta);
 			}
 			this.bitmap.dirty = true;
 		},
@@ -154,38 +160,51 @@
     click: function (cPointer, mouseEvent) { 
 			this.cP = cPointer;
 			this.mE = mouseEvent;
+			console.log('here');
 			if(this.actorAction) {
 				this.actorAction = false;
 			}
 		},
+		hold: function() {
+			console.log('herldsfl');
+		},
 		clickedSprite: function (sprite, pointer){
 			this.actor = sprite;
 			this.pointer = pointer;
+			console.log(this.actorAction);
+			if (this.actor.physicsData.action){
+				console.log('hey');
+				return;
+			}
 			this.actor.alpha = 0.5;
 			this.actor.physicsData.action = true;
 			this.actorAction = true;
 		},
+		
 		action: function(actor) {
 			this.actor = actor;
-			this.actor.rotation = this.game.physics.arcade.angleToPointer(this.actor);
-			this.drawTrajectory(this.actor, this.actor.rotation, this.actorAction);
+			//this.actor.rotation = this.game.physics.arcade.angleToPointer(this.actor);
+			this.drawTrajectory(this.actor, this.game.physics.arcade.angleToPointer(this.actor), this.actorAction);
 		},
 	
-    jump: function(inputPoint, actors) {
-      this.actors = actors;
-
-      this.actors.forEach(function(item){
-        this.actor = item;
-        this.v = this.game.physics.arcade.angleToPointer(item);
-        this.actor.body.velocity.x = Math.cos(this.v) * this.actor.physicsData.SPEED;
-        this.actor.body.velocity.y = Math.sin(this.v) * this.actor.physicsData.SPEED;
-      }, this);
+    jump: function(actor, theta) {
+      this.actor = actor;
+			this.theta = theta;
+			
+      this.actor.physicsData.veloX = Math.cos(this.theta) * this.actor.physicsData.SPEED;
+			this.actor.physicsData.veloY = -Math.sin(this.theta) * this.actor.physicsData.SPEED;
+			this.actor.physicsData.action = false;
+			this.actor.alpha = 1;
     },
-
+		
+		playInit: function() {
+			this.syncPlayWithMusic = true;
+		},
     play: function() {
       this.turnStart = false;
+			this.syncPlayWithMusic = false;
 			this.turnNumber++;
-			console.log(this.turnNumber);
+			console.log('turn number: ', this.turnNumber);
 			this.music();
       this.actors.forEach(function(a){
         this.actor = a;
@@ -222,25 +241,33 @@
     //music function(s)
     startMusic: function() {
       this.samps.shift();
-      this.samp1.loopFull(1);
+      this.samp1.loopFull(0.1);
+			this.samp1.onLoop.add(this.music, this);
     },
 		music: function() {
-			this.samps.shift();
-			if(this.turnNumber === 2){
-				this.samp3.play();
-			} else if (this.turnNumber === 3){
-				this.samp4.play();
-			} else if (this.turnNumber === 4){
-				console.log('hey you');
+			this.musicNumber = this.turnNumber % 4;
+			this.currentMusicLoop.stop();
+			if(this.syncPlayWithMusic) {this.play();}
+			if(this.musicNumber === 1){
+				this.currentMusicLoop = this.samp3;
+				this.currentMusicLoop.loopFull();
+			} else if (this.musicNumber === 2){
+				this.currentMusicLoop = this.samp4;
+				this.currentMusicLoop.loopFull();
+			} else if (this.musicNumber === 3){
+				this.currentMusicLoop = this.samp5;
+				this.currentMusicLoop.loopFull();
 			} else {
-				this.samp2.play();
+				this.currentMusicLoop = this.samp3;
+				this.currentMusicLoop.loopFull();
 			}
 		},
+		
 
     //collision function(s)
     friendsCollide: function(a, b) {
-      a.body.velocity.x = -10;
-      b.body.velocity.x = 10;
+      //a.body.velocity.x = -10;
+      //b.body.velocity.x = 10;
     },	
   };
   window['test2'] = window['test2'] || {};
