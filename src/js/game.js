@@ -46,8 +46,10 @@
 					SPEED : 20,
 					GRAVITY : 500,
 					MAX_SPEED : 500,
+					SHOOT : 5000,
 
 					action : false,
+					attack : " "
         };
 
         this.sprite.anchor.setTo(0.5, 0.5);
@@ -100,7 +102,7 @@
       //input algorithms
       this.cursors = this.game.input.keyboard.createCursorKeys();
       this.input.onDown.add(this.click, this);
-			this.input.onHold.add(this.hold, this);
+			//this.input.onHold.add(this.hold, this);
 
       //initialize the first 'pause'
       this.game.time.events.add(1000, this.pause, this);
@@ -156,23 +158,34 @@
 				this.calc.y = this.calc.velocity * this.calc.t * Math.sin(this.theta) * this.calc.correctionFactor - 0.5 * this.actor.physicsData.GRAVITY * this.calc.t * this.calc.t;
 				this.bitmap.context.fillRect(this.calc.x + this.actor.x, this.actor.y - this.calc.y, 3, 3);
 			}
-			if(!loop) {
+			if(!loop && this.actor.attack === "jump") {
 				this.jump(this.actor, this.theta, this.calc.velocity);
-			}
+			} else if (!loop && this.actor.attack === "dash") {
+
+			} else if(!loop && this.actor.attack === "shoot") {
+
+			} else if(!loop && this.actor.attack === "sword") {
+
+			} else {}
 			this.bitmap.dirty = true;
 		},
 
 		//Mathmatic function for calulating games physics patterns
 
-		trajectoryCalculations: function(actor) {
+		trajectoryCalculations: function(actor, theta) {
 			this.actor = actor;
+			this.SPEED = (this.actor.physicsData.attack === "jump") ? this.actor.physicsData.SPEED : this.actor.physicsData.SHOOT;
+			this.MAX_SPEED = (this.actor.physicsData.attack === "jump") ? this.physicsData.MAX_SPEED : this.actor.physicsData.SHOOT;
 
 			this.inputX = this.game.input.activePointer.x + this.game.camera.x;
 			this.inputY = this.game.input.activePointer.y + this.game.camera.y;
 			this.actorX = this.actor.x;
 			this.actorY = this.actor.y;
 
-			this.v = this.calculateVelcity(this.inputX, this.inputY, this.actorX, this.actorY, this.actor.physicsData.SPEED, this.actor.physicsData.MAX_SPEED);
+			this.v = this.calculateVelcity(this.inputX, this.inputY,
+																		 this.actorX, this.actorY,
+																		 this.actor.physicsData.SPEED,
+																		 this.actor.physicsData.MAX_SPEED);
 
 			return {
 				i : this.actor.z,
@@ -205,21 +218,24 @@
 			this.cP = cPointer;
 			this.mE = mouseEvent;
 			if(this.actorAction) {
-				//this.actorAction = false;
+				this.actorAction = false;
 			}
 		},
-		hold: function() {
-			// console.log('herldsfl');
-		},
+		// hold: function(a, b) {
+		// 	//this.actorAction = false;
+		// 	console.log(a, b, 'hey');
+		// 	console.log("hello");
+		// },
 		clickedSprite: function (sprite, pointer){
 			this.actor = sprite;
 			this.pointer = pointer;
 			this.actor.alpha = 0.5;
 			this.actor.physicsData.action = true;
 			this.actorAction = true;
-			// console.log('heelo');
+			this.actor.attack = "jump";
 		},
-		releaseSprite: function(){
+		releaseSprite: function(a, b){
+			console.log(a, b);
 			this.actorAction = false;
 		},
 
@@ -239,6 +255,9 @@
 			this.actor.alpha = 1;
     },
 
+		shoot: function() {
+
+		},
 		playInit: function() {
 			this.syncPlayWithMusic = true;
 		},
@@ -246,7 +265,6 @@
       this.turnStart = false;
 			this.syncPlayWithMusic = false;
 			this.turnNumber++;
-			// console.log('turn number: ', this.turnNumber);
 			this.music();
       this.actors.forEach(function(a){
         this.actor = a;
@@ -281,16 +299,13 @@
 			this.samp1.onLoop.add(this.music, this);
     },
 		music: function() {
-			//// console.log('teset: ', this.turnMusic % 8 === 0);
-			//this.currentMusicLoop.stop();
+		//this.currentMusicLoop.stop();
 			if (this.musicNumber === 12 && this.turnMusic % 8 === 0){
-				//// console.log('samp4');
 				this.currentMusicLoop.stop();
 				this.currentMusicLoop = this.samp3;
 				this.currentMusicLoop.play();
 				this.musicNumber++;
 			} else if (this.musicNumber  === 2 && this.turnMusic % 8 === 0){
-				//// console.log('samp5');
 				this.currentMusicLoop.stop();
 				this.currentMusicLoop = this.samp4;
 				this.currentMusicLoop.loopFull();
@@ -298,13 +313,11 @@
 				this.turnMusic--;
 
 			} else if(this.turnMusic % 8 === 0 && this.musicNumber === 0){
-				//// console.log('samp3');
 				this.currentMusicLoop.stop();
 				this.currentMusicLoop = this.samp5;
 				this.currentMusicLoop.loopFull();
 				this.musicNumber++;
 			}else {
-				// console.log('hey defaulte', this.turnMusic, this.musicNumber);
 			}
 
 			this.turnMusic++;
@@ -321,7 +334,6 @@
 		actorsWithEnviroments: function(actor, enviroment){
 			this.actor = actor;
 			this.enviroment = enviroment;
-			// console.log(this.actor, this.enviroment);
 		},
 
 

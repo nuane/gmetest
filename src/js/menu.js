@@ -3,6 +3,11 @@
 
   function Menu() {}
 
+  var gameObject = (function(){
+    //function GameObject = {}
+    var a = "hello all";
+  }());
+
   Menu.prototype = {
     create: function () {
       var text = this.add.text(this.game.width * 0.5, this.game.height * 0.5,
@@ -10,14 +15,15 @@
       });
       text.anchor.set(0.5);
       this.input.onDown.add(this.onDown, this);
+      console.log(gameObject);
+
     },
 
     update: function () {
-
     },
 
     onDown: function () {
-      this.game.state.start('game');
+      this.game.state.start('game', true, false, "hello", 42);
     }
   };
 

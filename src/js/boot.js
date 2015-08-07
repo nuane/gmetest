@@ -4,6 +4,9 @@
   function Boot() {}
 
   Boot.prototype = {
+    init: function(parameterA, parameterB) {
+      console.log(parameterA, parameterB);
+    },
     preload: function () {
       this.load.image('preloader', 'assets/preloader.gif');
     },
@@ -31,4 +34,3 @@
   window['test2'] = window['test2'] || {};
   window['test2'].Boot = Boot;
 }());
-

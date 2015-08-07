@@ -1,4 +1,4 @@
-var a = function() {
+(function() {
   'use strict';
 
   function Preloader() {
@@ -50,7 +50,4 @@ var a = function() {
   };
   window['test2'] = window['test2'] || {};
   window['test2'].Preloader = Preloader;
-  console.log(window['test2']);
-}();
-
-console.log(a);
+}());
