@@ -6,6 +6,7 @@
   Game.prototype = {
     create: function () {
 
+			//global variables (that really don't need to be here TODO fyi :>DKLFJS((())))
       this.turnStart = true;
 			this.turnNumber = 0;
 			this.turnTime = Phaser.Timer.SECOND * 1.5;
@@ -14,6 +15,7 @@
 			this.syncPlayWithMusic = false;
 			this.actorAction = false;
 
+			//basic game data
       this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
       this.game.stage.backgroundColor = '#000000';
@@ -52,6 +54,7 @@
 					attack : " "
         };
 
+				//sprite physics data for game engine and DOM input
         this.sprite.anchor.setTo(0.5, 0.5);
         this.sprite.scale.setTo(2.5);
 
@@ -236,7 +239,10 @@
 		},
 		releaseSprite: function(a, b){
 			console.log(a, b);
-			this.actorAction = false;
+			this.actor = a;
+			this.releasedMPointer = b;
+			// this.actorAction = false;
+			this.actor.physicsData.attack = "shoot";
 		},
 
 		action: function(actor) {
